@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Przewodnik 18.08 — Pętla Zachodnia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Archivo+Black&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --calima:#EDEAE0;   /* jasne tło — czytelne w słońcu */
+    --lava:#1B1C1E;     /* tekst */
+    --senal:#16509E;    /* niebieski jak hiszpańskie znaki drogowe */
+    --blanco:#FFFFFF;
+    --verde:#0E7A3D;    /* odsłuchane */
+    --oro:#C9820E;      /* najbliższy przystanek */
+    --mut:#6D6A61;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--calima);color:var(--lava);
+       font-family:'Archivo',system-ui,sans-serif;font-size:16px;line-height:1.45;
+       padding:12px 12px 60px}
+  .plate{background:var(--senal);color:#fff;border:3px solid #fff;border-radius:16px;
+         box-shadow:0 0 0 2px var(--senal),0 4px 14px rgba(27,28,30,.18);
+         padding:16px 18px;margin:4px 0 14px}
+  .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+  h1{font-family:'Archivo Black',sans-serif;font-size:34px;line-height:1.02;margin:6px 0 2px}
+  .plate small{opacity:.85}
+  .card{background:var(--blanco);border-radius:14px;padding:12px 14px;margin:10px 0;
+        box-shadow:0 1px 4px rgba(27,28,30,.10)}
+  .controls{position:sticky;top:8px;z-index:20}
+  .gps{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;min-height:22px}
+  .dot{width:10px;height:10px;border-radius:50%;background:#B4B0A5;flex:none}
+  .dot.on{background:var(--verde)} .dot.err{background:#B3261E}
+  .gps small{font-weight:400;color:var(--mut)}
+  .row{display:flex;gap:8px;margin-top:10px}
+  button{font-family:inherit;font-size:16px;font-weight:700;border:0;border-radius:12px;
+         min-height:52px;cursor:pointer}
+  .row button{flex:1;background:var(--calima);color:var(--lava)}
+  .row button:active{transform:scale(.98)}
+  .row .prim{background:var(--senal);color:#fff}
+  .pilot{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:14px;color:var(--mut)}
+  .pilot input{width:22px;height:22px;accent-color:var(--senal)}
+  #nextBtn{display:none;width:100%;margin-top:10px;background:var(--oro);color:#fff}
+  .stop{border-left:6px solid transparent;transition:border-color .3s}
+  .stop.near{border-left-color:var(--oro)}
+  .stop.playing{border-left-color:var(--senal);box-shadow:0 0 0 2px var(--senal)}
+  .stop.done{opacity:.62}
+  .stop .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .stop h2{font-family:'Archivo Black',sans-serif;font-size:19px;margin:0}
+  .stop .sub{color:var(--mut);font-size:13px;margin:2px 0 0}
+  .dist{font-weight:700;font-size:14px;color:var(--senal);white-space:nowrap;flex:none}
+  .state{font-size:12px;font-weight:700;margin-top:6px;min-height:14px}
+  .state.play{color:var(--senal)} .state.done{color:var(--verde)} .state.q{color:var(--oro)}
+  .mini{display:flex;gap:8px;margin-top:10px}
+  .mini button{flex:1;min-height:46px;font-size:18px;background:var(--calima)}
+  #overlay{position:fixed;inset:0;background:rgba(237,234,224,.97);z-index:50;
+           display:flex;flex-direction:column;justify-content:center;padding:24px;text-align:center}
+  #overlay .plate{text-align:left}
+  #startBtn{background:var(--senal);color:#fff;font-size:22px;min-height:72px;width:100%;
+            border:3px solid #fff;box-shadow:0 0 0 2px var(--senal)}
+  #overlay p{color:var(--mut);font-size:14px}
+  #warn{display:none;background:#B3261E;color:#fff;border-radius:12px;padding:10px 14px;
+        font-size:14px;font-weight:600;margin:10px 0}
+</style>
+</head>
+<body>
+
+<div id="overlay">
+  <div class="plate">
+    <div class="eyebrow">Teneryfa · wtorek 18.08 · auto</div>
+    <h1>Pętla<br>Zachodnia</h1>
+    <small>audioprzewodnik GPS · 13 przystanków</small>
+  </div>
+  <button id="startBtn">▶ &nbsp;Start przewodnika</button>
+  <p>Po starcie zezwól na <b>lokalizację</b>, gdy Chrome zapyta.<br>
+     Kierowca patrzy na drogę — telefon trzyma pilot.</p>
+</div>
+
+<div class="plate">
+  <div class="eyebrow">Teneryfa · wtorek 18.08 · auto</div>
+  <h1>Pętla Zachodnia</h1>
+  <small>narracja włącza się sama z GPS</small>
+</div>
+
+<div id="warn"></div>
+
+<div class="card controls">
+  <div class="gps"><span class="dot" id="gpsDot"></span><span id="gpsTxt">GPS: czekam na start…</span></div>
+  <div class="row">
+    <button id="pauseBtn">⏸ Pauza</button>
+    <button id="replayBtn">↺ Powtórz</button>
+    <button id="stopBtn">⏹ Stop</button>
+  </div>
+  <label class="pilot"><input type="checkbox" id="pilotChk">
+    Tryb pilota — odtwarzaj ręcznie, po kolei (bez GPS)</label>
+  <button id="nextBtn">▶ Następny przystanek</button>
+</div>
+
+<div id="stops"></div>
+
+<script>
+const STOPS=[
+{id:"intro",t:"Powitanie",s:"gra po naciśnięciu startu",lat:null,lon:null,r:0,
+ x:"Dzień dobry! To wasz prywatny przewodnik na dzisiejszą pętlę po zachodniej Teneryfie. Plan jest taki: przez górskie Santiago del Teide zjedziecie do Garachico na kąpiel w lawowych basenach, potem smocze drzewo w Icod de los Vinos, cichy przystanek w Los Silos, a na deser Masca w złotym świetle i klify Los Gigantes. Będę się odzywać, kiedy dojedziecie do ciekawych miejsc. Kierowca patrzy na drogę, pilot trzyma telefon. Miłej drogi!"},
+{id:"guia",t:"Guía de Isora",s:"podjazd starą drogą przez zachód",lat:28.2111121,lon:-16.7787562,r:1500,
+ x:"Wspinacie się właśnie starą drogą przez zachodnie zbocza wyspy. Zanim na dole powstała autostrada, to była główna nitka łącząca rolnicze miasteczka. Guía de Isora żyje z dwóch pięter upraw: nisko, nad oceanem, plantacje bananów, a tutaj, wyżej, winnice i tarasy wykute w zboczu. Zwróćcie uwagę na murki z czarnego kamienia wzdłuż drogi. Każdy układano ręcznie, pokolenie po pokoleniu."},
+{id:"santiago",t:"Santiago del Teide",s:"dolina migdałowców i wulkan Chinyero",lat:28.2976041,lon:-16.8159813,r:1200,
+ x:"Witajcie na wysokości około dziewięciuset metrów. Ta spokojna dolina przeżyła ostatnią erupcję w historii Teneryfy. W listopadzie 1909 roku wybuchł pobliski wulkan Chinyero. Lawa płynęła ponad tydzień i zatrzymała się tuż przed zabudowaniami. Mieszkańcy do dziś opowiadają, że pomogła procesja z figurą świętego. Zimą cała dolina tonie w kwiatach migdałowców, a biały kościółek w centrum jest jej sercem od siedemnastego wieku."},
+{id:"erjos",t:"Przełęcz Erjos",s:"granica dwóch światów, ponad 1000 m",lat:28.3287425,lon:-16.8049327,r:1000,
+ x:"Przejeżdżacie przełęcz Erjos, ponad tysiąc metrów nad oceanem. To granica dwóch światów: za wami suche południe, przed wami zielona północ. Pasat wciska tu znad Atlantyku wilgotne powietrze, które skrapla się w chmury. Stąd lasy wawrzynowe na zboczach Monte del Agua. To żywa skamielina z czasów, gdy takie puszcze porastały południe Europy. Stawy przy drodze to dawne wyrobiska gliny, dziś królestwo żab i ptaków."},
+{id:"mirador",t:"Mirador de Garachico",s:"Garachico z góry i droga lawy",lat:28.362084,lon:-16.7635723,r:500,
+ x:"Zatrzymajcie się na chwilę przy tarasie widokowym. Pod wami leży Garachico jak makieta: dachy, port i czarne jęzory zastygłej lawy. W maju 1706 roku z wulkanu Trevejo popłynęły dokładnie tędy, tym zboczem, dwie rzeki ognia. W jedną noc zasypały najbogatszy port wyspy. Miasto jednak nie umarło: odbudowało się na półwyspie z tej samej lawy, która je zniszczyła. Za chwilę zjedziecie serpentynami prosto w środek tej historii."},
+{id:"caleton",t:"El Caletón · Garachico",s:"kąpiel w zastygłej katastrofie",lat:28.3735125,lon:-16.7660683,r:400,
+ x:"Jesteście w El Caletón. Te baseny to pamiątka po katastrofie: lawa z 1706 roku wpadła tutaj do oceanu, zagotowała go i zastygła w kamienne wanny, w których dziś się kąpiecie. Woda wymienia się z każdą falą, więc jest czysta i pełna rybek. Rozejrzyjcie się też po miasteczku: wieża zamku San Miguel przetrwała erupcję i stoi sto metrów stąd. Uważajcie na śliskie skały i miłej kąpieli!"},
+{id:"drago",t:"Drago Milenario",s:"smocze drzewo w Icod de los Vinos",lat:28.3665471,lon:-16.722216,r:450,
+ x:"Przed wami najsłynniejsze drzewo Wysp Kanaryjskich: Drago Milenario. Dracena smocza, około siedemnastu metrów wysokości i wieku, o który uczeni spierają się do dziś. Pewnie osiemset do tysiąca lat, choć legendy mówią o trzech tysiącach. Kiedy skaleczyć jej pień, sok czerwienieje na powietrzu jak krew. Guanczowie wierzyli, że to krew smoka, i leczyli nią rany. Najlepszy darmowy widok macie z placu przy kościele, a wejście do parku prowadzi pod same korzenie."},
+{id:"silos",t:"Los Silos",s:"plac, banany i szkielet wieloryba",lat:28.3655261,lon:-16.8173362,r:700,
+ x:"Wjeżdżacie do Los Silos, miasteczka, które żyje w rytmie sprzed turystyki. Nazwa pochodzi od spichlerzy na zboże, które stały tu już w piętnastym wieku. Dziś dookoła szumią plantacje bananów, a na placu pod starym kioskiem miejscowi piją kawę jak sto lat temu. Ciekawostka: przy nadmorskiej promenadzie leży prawdziwy szkielet wielkiego wieloryba wyrzuconego kiedyś na ten brzeg. Jeśli macie pięć minut, warto podjechać."},
+{id:"buenavista",t:"Buenavista del Norte",s:"ostatnie miasteczko przed Teno",lat:28.364165,lon:-16.849757,r:900,
+ x:"Buenavista del Norte: ostatnie miasteczko przed końcem świata. Dalej na zachód jest już tylko masyw Teno i latarnia na Punta de Teno, gdzie kończy się asfalt. Przez wieki żyło się tu z dala od wszystkiego i miejscowi mówią, że w tym rogu wyspy czas płynie wolniej. Za chwilę droga skręci w głąb gór, w zieloną dolinę El Palmar."},
+{id:"palmar",t:"Dolina El Palmar",s:"wulkan z odkrojonym kawałkiem",lat:28.3440827,lon:-16.8462313,r:900,
+ x:"Dolina El Palmar. Spójrzcie na stożek wulkaniczny pośrodku: wygląda, jakby ktoś odkroił z niego kawał tortu. To nie natura, to ludzie. Przez dziesięciolecia wybierali stąd czarny żwir, pikon, którym wyściela się pola, żeby trzymały wilgoć. Wyżej zaczyna się wiejski park Teno: tarasy, kozy i chmury zaczepione o granie. Przed wami ostatnie kilometry serpentyn do Maski. Kierowco, spokojnie i z klaksonem na ciasnych zakrętach."},
+{id:"masca",t:"Masca",s:"perła wyspy w złotym świetle",lat:28.3053534,lon:-16.8399144,r:600,
+ x:"Witajcie w Masce, najsłynniejszej wiosce Teneryfy. Kilkanaście domów przyklejonych do grani sześćset metrów nad morzem. Do lat siedemdziesiątych nie prowadziła tu żadna droga, tylko muli szlak, a legenda mówi, że wcześniej ukrywali się tu piraci. Wąwóz pod wioską schodzi prosto do oceanu: trzy godziny marszu w dół, dla was dziś tylko do popatrzenia. O tej porze światło robi się złote i skały płoną na pomarańczowo. To jest ta pocztówka, po którą tu jechaliście."},
+{id:"cherfe",t:"Mirador de Cherfe",s:"sto zakrętów i La Gomera",lat:28.2996791,lon:-16.8238577,r:400,
+ x:"Mirador de Cherfe, najwyższy punkt tej drogi. Obejrzyjcie się: cała dolina Maski w wieczornym świetle, a na horyzoncie, nad oceanem, wyspa La Gomera. Droga, którą właśnie pokonaliście, ma ponad sto zakrętów i długo uchodziła za najtrudniejszą na wyspie. Brawa dla kierowcy. Teraz łagodny zjazd przez Santiago del Teide i ostatni przystanek dnia: klify gigantów."},
+{id:"archipenque",t:"Mirador Archipenque",s:"klify Los Gigantes na pożegnanie",lat:28.2404149,lon:-16.8370118,r:450,
+ x:"Ostatni akord dnia: Mirador Archipenque i klify Los Gigantes. Ściany bazaltu wyrastają z oceanu na trzysta do sześciuset metrów, prosto, jak nożem uciął. Guanczowie nazywali je Murem Piekła i wierzyli, że za nimi kończy się świat. Łódki na dole wyglądają jak okruchy i to najlepsza miara tej skali. Popatrzcie, jak słońce kładzie się na ścianach, i wracajcie powoli do bazy. To był dobry dzień."}
+];
+
+const $=id=>document.getElementById(id);
+const played={}, queued={};
+let cur=null, sents=[], si=0, speaking=false, paused=false, wl=null;
+
+/* ---------- UI ---------- */
+const box=$("stops");
+STOPS.forEach((st,i)=>{
+  const d=document.createElement("div");
+  d.className="card stop"; d.id="c_"+st.id;
+  d.innerHTML=`<div class="top"><div><h2>${i===0?"⏵":i+"."} ${st.t}</h2>
+    <div class="sub">${st.s}</div></div><div class="dist" id="d_${st.id}"></div></div>
+    <div class="state" id="s_${st.id}"></div>
+    <div class="mini"><button onclick="playStop('${st.id}',true)">▶</button>
+    <button onclick="restart('${st.id}')">↺</button></div>`;
+  box.appendChild(d);
+});
+function setState(id,cls,txt){const e=$("s_"+id);e.className="state "+(cls||"");e.textContent=txt||"";}
+function markCard(){STOPS.forEach(s=>{const c=$("c_"+s.id);
+  c.classList.toggle("playing",cur===s.id);
+  c.classList.toggle("done",!!played[s.id]&&cur!==s.id);});}
+
+/* ---------- TTS (zdanie po zdaniu — stabilne na Androidzie) ---------- */
+function plVoice(){const v=speechSynthesis.getVoices();
+  return v.find(x=>/^pl/i.test(x.lang))||v.find(x=>/pol/i.test(x.name))||null;}
+function speakNext(){
+  if(paused||cur===null)return;
+  if(si>=sents.length){ // koniec przystanku
+    played[cur]=true; setState(cur,"done","✓ odsłuchane"); const fin=cur;
+    cur=null; markCard();
+    const nq=STOPS.find(s=>queued[s.id]); if(nq){delete queued[nq.id]; playStop(nq.id);}
+    return;
+  }
+  const u=new SpeechSynthesisUtterance(sents[si]);
+  const v=plVoice(); if(v)u.voice=v; u.lang="pl-PL"; u.rate=.97;
+  u.onend=()=>{if(!paused){si++;speakNext();}};
+  u.onerror=()=>{if(!paused){si++;speakNext();}};
+  speechSynthesis.resume(); speechSynthesis.speak(u);
+}
+function playStop(id,user){
+  const st=STOPS.find(s=>s.id===id); if(!st)return;
+  if(cur&&cur!==id&&!user){ if(!played[id]){queued[id]=true;setState(id,"q","w kolejce…");} return;}
+  speechSynthesis.cancel();
+  cur=id; sents=st.x.match(/[^.!?…]+[.!?…]+["']?|\S[^.!?…]*$/g)||[st.x];
+  si=0; paused=false; $("pauseBtn").textContent="⏸ Pauza";
+  setState(id,"play","▶ teraz gra"); markCard();
+  $("c_"+id).scrollIntoView({behavior:"smooth",block:"center"});
+  speakNext();
+}
+function restart(id){playStop(id,true);}
+$("pauseBtn").onclick=()=>{
+  if(!cur)return;
+  if(!paused){paused=true;speechSynthesis.cancel();$("pauseBtn").textContent="⏵ Wznów";setState(cur,"q","⏸ pauza");}
+  else{paused=false;$("pauseBtn").textContent="⏸ Pauza";setState(cur,"play","▶ teraz gra");speakNext();}
+};
+$("replayBtn").onclick=()=>{const id=cur||lastPlayed(); if(id)playStop(id,true);};
+$("stopBtn").onclick=()=>{speechSynthesis.cancel();if(cur)setState(cur,"","");cur=null;paused=false;
+  $("pauseBtn").textContent="⏸ Pauza";markCard();};
+function lastPlayed(){let l=null;STOPS.forEach(s=>{if(played[s.id])l=s.id;});return l;}
+
+/* ---------- pilot ---------- */
+$("pilotChk").onchange=e=>{$("nextBtn").style.display=e.target.checked?"block":"none";};
+$("nextBtn").onclick=()=>{const n=STOPS.find(s=>!played[s.id]); if(n)playStop(n.id,true);};
+
+/* ---------- GPS ---------- */
+function hav(a,b,c,d){const R=6371e3,p=Math.PI/180,
+  dA=(c-a)*p,dB=(d-b)*p,
+  h=Math.sin(dA/2)**2+Math.cos(a*p)*Math.cos(c*p)*Math.sin(dB/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));}
+function fmt(m){return m<950?Math.round(m/10)*10+" m":(m/1000).toFixed(1).replace(".",",")+" km";}
+function onPos(p){
+  const{latitude:la,longitude:lo,accuracy:ac}=p.coords;
+  $("gpsDot").className="dot on";
+  $("gpsTxt").innerHTML=`GPS aktywny <small>±${Math.round(ac)} m</small>`;
+  let nearId=null,nearD=1e12;
+  STOPS.forEach(s=>{
+    if(s.lat===null)return;
+    const d=hav(la,lo,s.lat,s.lon);
+    $("d_"+s.id).textContent=fmt(d);
+    if(!played[s.id]&&d<nearD){nearD=d;nearId=s.id;}
+    if(d<=s.r&&!played[s.id]&&!queued[s.id]&&cur!==s.id)playStop(s.id);
+  });
+  STOPS.forEach(s=>$("c_"+s.id).classList.toggle("near",s.id===nearId&&cur!==s.id));
+}
+function onErr(e){
+  $("gpsDot").className="dot err";
+  $("gpsTxt").textContent = e.code===1
+    ? "Brak zgody na lokalizację — dotknij kłódki obok adresu → Uprawnienia → Lokalizacja → Zezwól, potem odśwież"
+    : "Szukam sygnału GPS…";
+}
+async function lock(){try{wl=await navigator.wakeLock.request("screen");}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")lock();});
+
+/* ---------- start ---------- */
+$("startBtn").onclick=()=>{
+  $("overlay").style.display="none";
+  speechSynthesis.getVoices();
+  if(!window.isSecureContext){
+    $("warn").style.display="block";
+    $("warn").textContent="Ta kopia działa poza https — Chrome blokuje tu GPS. Otwórz wersję online, a wszystko zadziała samo.";
+  }else if(navigator.geolocation){
+    $("gpsTxt").textContent="GPS: pytam o zgodę…";
+    navigator.geolocation.watchPosition(onPos,onErr,{enableHighAccuracy:true,maximumAge:3000,timeout:15000});
+  }
+  lock();
+  playStop("intro",true);
+};
+</script>
+</body>
+</html>
